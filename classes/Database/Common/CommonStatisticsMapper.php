@@ -169,7 +169,7 @@ class CommonStatisticsMapper implements StatisticsMapperInterface
             $res = [];
             while ($row = $st->fetch(\PDO::FETCH_NUM)) {
                 $res[] = [
-                    'ip'               => inet_ntop($row[0]),
+                    'ip'               => $row[0],
                     'emails'           => intval($row[1]),
                     'dkim_spf_aligned' => intval($row[2]),
                     'dkim_aligned'     => intval($row[3]),

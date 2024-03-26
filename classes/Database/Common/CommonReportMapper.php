@@ -121,7 +121,7 @@ class CommonReportMapper implements ReportMapperInterface
             $data->records = [];
             while ($res = $st->fetch(\PDO::FETCH_NUM)) {
                 $data->records[] = [
-                    'ip'            => inet_ntop($res[1]),
+                    'ip'            => $res[1],
                     'count'         => intval($res[2]),
                     'disposition'   => Common::$disposition[$res[3]],
                     'reason'        => json_decode($res[4] ?? '', true),
@@ -208,7 +208,7 @@ class CommonReportMapper implements ReportMapperInterface
             );
             foreach ($data->records as &$rec_data) {
                 $st->bindValue(1, $new_id, \PDO::PARAM_INT);
-                $st->bindValue(2, inet_pton($rec_data['ip']), \PDO::PARAM_STR);
+                $st->bindValue(2, $rec_data['ip'], \PDO::PARAM_STR);
                 $st->bindValue(3, $rec_data['count'], \PDO::PARAM_INT);
                 $st->bindValue(4, array_search($rec_data['disposition'], Common::$disposition), \PDO::PARAM_INT);
                 self::sqlBindJson($st, 5, $rec_data['reason']);
