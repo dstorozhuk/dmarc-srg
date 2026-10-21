@@ -1,0 +1,16 @@
+# PHP security updates from packages.sury.org without changing the DDEV version
+# (CVE-2026-109618 / CVE-2026-109619, PHP security release of 2026-10-21).
+# Refreshes the sury signing key (older DDEV images ship an expired one, and
+# apt then sees nothing newer), then upgrades only the installed packages of
+# the PHP version this project runs (DDEV passes it as DDEV_PHP_VERSION).
+# --force-confold keeps DDEV's own config files instead of stopping at dpkg's
+# prompt. Change PHP_SECURITY_REFRESH for every new PHP patch so Docker does
+# not reuse the cached layer.
+ARG DDEV_PHP_VERSION
+ARG PHP_SECURITY_REFRESH=2026-10-21
+RUN curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/deb.sury.org-php.gpg \
+ && apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade \
+      -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold \
+      $(dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' "php${DDEV_PHP_VERSION}-*" 'php-*' | awk '$1=="ii"{print $2}') \
+ && rm -rf /var/lib/apt/lists/*
