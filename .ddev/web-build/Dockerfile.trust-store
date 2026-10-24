@@ -1,0 +1,23 @@
+# Trust store fix for the eMudhra intermediate CA compromise of 2026-10-20
+# (https://emudhra.we-have-a-problem.com/, Mozilla bug 2083449). The private
+# keys of eight eMudhra intermediates can be recovered from their certificates.
+# The ca-certificates in the DDEV web image (20250419 on Debian 13, 20230311 on
+# Debian 12) still trusts them through the emSign ECC Root CA - G3 root, so
+# outgoing HTTPS calls from PHP, curl and composer could be intercepted.
+# Debian fixed it in 20250419+deb13u1 (trixie-security) and 20250419~deb12u2
+# (bookworm-security); the package's postinst runs update-ca-certificates.
+# The step fails the build if the installed version is older than the fix.
+# This file sorts after Dockerfile.php-security, which refreshes the expired
+# sury key, so apt-get update here does not trip over that repository.
+# Change CA_CERTIFICATES_REFRESH to force a rebuild of this layer.
+ARG CA_CERTIFICATES_REFRESH=2026-10-24
+RUN . /etc/os-release \
+ && case "$VERSION_CODENAME" in \
+      trixie) min=20250419+deb13u1 ;; \
+      bookworm) min=20250419~deb12u2 ;; \
+      *) min=0 ;; \
+    esac \
+ && apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade ca-certificates \
+ && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge "$min" \
+ && rm -rf /var/lib/apt/lists/*
