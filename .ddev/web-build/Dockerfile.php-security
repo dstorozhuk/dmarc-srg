@@ -1,5 +1,6 @@
 # PHP security updates from packages.sury.org without changing the DDEV version
-# (CVE-2026-109618 / CVE-2026-109619, PHP security release of 2026-10-21).
+# (CVE-2026-109618 / CVE-2026-109619, PHP security release of 2026-10-21;
+# CVE-2026-126714 "PHPAfterShell", fixed in PHP 8.2.36 / 8.3.37 / 8.4.28 / 8.5.13).
 # Refreshes the sury signing key (older DDEV images ship an expired one, and
 # apt then sees nothing newer), then upgrades only the installed packages of
 # the PHP version this project runs (DDEV passes it as DDEV_PHP_VERSION).
@@ -7,7 +8,7 @@
 # prompt. Change PHP_SECURITY_REFRESH for every new PHP patch so Docker does
 # not reuse the cached layer.
 ARG DDEV_PHP_VERSION
-ARG PHP_SECURITY_REFRESH=2026-10-21
+ARG PHP_SECURITY_REFRESH=2026-11-22
 RUN curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/deb.sury.org-php.gpg \
  && apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade \
