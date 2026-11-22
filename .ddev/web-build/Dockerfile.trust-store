@@ -9,6 +9,9 @@
 # The step fails the build if the installed version is older than the fix.
 # This file sorts after Dockerfile.php-security, which refreshes the expired
 # sury key, so apt-get update here does not trip over that repository.
+# The package upgrade resets the trust-store permissions, and DDEV's start script
+# runs mkcert -install as the web user, so the last step restores 777/666
+# (without it the web container exits; pm.itech4web.com, 2026-11-20).
 # Change CA_CERTIFICATES_REFRESH to force a rebuild of this layer.
 ARG CA_CERTIFICATES_REFRESH=2026-10-24
 RUN . /etc/os-release \
@@ -20,4 +23,6 @@ RUN . /etc/os-release \
  && apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade ca-certificates \
  && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge "$min" \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+ && chmod 777 /usr/local/share/ca-certificates /etc/ssl/certs \
+ && chmod 666 /etc/ssl/certs/ca-certificates.crt
