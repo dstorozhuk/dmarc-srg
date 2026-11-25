@@ -15,3 +15,30 @@ RUN curl -fsSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/deb.
       -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold \
       $(dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' "php${DDEV_PHP_VERSION}-*" 'php-*' | awk '$1=="ii"{print $2}') \
  && rm -rf /var/lib/apt/lists/*
+
+# Ghostscript security update (CVE-2026-125396 "Upload2Shell": a -dSAFER
+# bypass in .putgstringcopy that runs code from a crafted PostScript or PDF
+# file). Fixed in Debian 13 10.05.1~dfsg-1+deb13u2 and Debian 12
+# 10.0.0~dfsg-11+deb12u9. The DDEV base image ships an older build and
+# ddev restart reuses it, so the upgrade has to happen in the image build.
+# Upgrades only the Ghostscript packages that are installed, then fails the
+# build if Ghostscript is still older than the fixed build for this Debian
+# release (a stale mirror would otherwise make the upgrade a silent no-op).
+# Change GS_SECURITY_REFRESH for the next Ghostscript fix so Docker does not
+# reuse the cached layer.
+ARG GS_SECURITY_REFRESH=2026-11-25
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade \
+      $(dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' ghostscript 'libgs10*' libgs-common 2>/dev/null | awk '$1=="ii"{print $2}') \
+ && rm -rf /var/lib/apt/lists/* \
+ && if dpkg-query -W -f='${db:Status-Abbrev}' ghostscript 2>/dev/null | grep -q '^ii'; then \
+      . /etc/os-release; \
+      case "$VERSION_CODENAME" in \
+        bookworm) gs_min=10.0.0~dfsg-11+deb12u9 ;; \
+        trixie) gs_min=10.05.1~dfsg-1+deb13u2 ;; \
+        *) gs_min=10.08.0 ;; \
+      esac; \
+      gs_version=$(dpkg-query -W -f='${Version}' ghostscript); \
+      dpkg --compare-versions "$gs_version" ge "$gs_min" \
+        || { echo "ghostscript $gs_version is older than the fixed $gs_min" >&2; exit 1; }; \
+    fi
